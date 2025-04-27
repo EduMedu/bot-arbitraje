@@ -3,5 +3,3 @@ aiohttp
 aiofiles
 prometheus_client
 aiosqlite
-# opcional:
-# ccxtpro       # solo si cuentas con licencia de CCXT Pro
