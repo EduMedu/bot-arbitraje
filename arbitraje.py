@@ -1,80 +1,85 @@
 import ccxt, time, traceback
 from datetime import datetime, timezone
 
-exchange = ccxt.binance({'enableRateLimit': True})
+# ---------- CONFIG ----------
+FEE            = 0.001      # 0.1 % por operación
+START_USDT     = 1000
+SLEEP_SECONDS  = 5
+HEARTBEAT_SEC  = 900        # 15 minutos
 
-# ----- CONFIGURACIÓN -----
-FEE          = 0.001          # 0.1 % por operación
-START_USDT   = 1000
-SLEEP        = 5              # seg. entre consultas
-HEARTBEAT_SEC = 900           # 15 min
-# Triángulos: (base, intermedio1, intermedio2)
 TRIANGLES = [
-    ("USDT", "BTC", "ETH"),   # original
+    ("USDT", "BTC", "ETH"),
     ("USDT", "BTC", "BNB"),
     ("USDT", "BTC", "SOL"),
     ("USDT", "ETH", "ADA"),
     ("USDT", "BTC", "XRP")
 ]
-# --------------------------
+# ----------------------------
 
-def now():  # sello de tiempo ISO-8601
+exchange = ccxt.binance({'enableRateLimit': True})
+
+def now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
-# construir el conjunto de pares necesarios
+# ----- construir tabla de pares necesarios -----
 pairs = {}
 for base, a, b in TRIANGLES:
-    pairs[f"{a}/{base}"] = None   # ej. BTC/USDT
-    pairs[f"{b}/{a}"]   = None    # ej. ETH/BTC
-    pairs[f"{b}/{base}"] = None   # ej. ETH/USDT
-
-first_run   = True
-last_beat   = time.time()
+    pairs[f"{a}/{base}"] = None
+    pairs[f"{b}/{a}"]   = None
+    pairs[f"{b}/{base}"] = None
+# -----------------------------------------------
 
 def fetch_prices():
     for p in pairs:
         t = exchange.fetch_ticker(p)
         pairs[p] = {'bid': t['bid'], 'ask': t['ask']}
 
-def profit_for_triangle(base, a, b):
-    """ Calcula beneficio (base→a→b→base).  Devuelve profit neto. """
-    # base → a
-    a_amt  = (START_USDT / pairs[f"{a}/{base}"]['ask']) * (1-FEE)
-    # a → b
-    b_amt  = (a_amt       / pairs[f"{b}/{a}"]  ['ask']) * (1-FEE)
-    # b → base
-    base_f = (b_amt       * pairs[f"{b}/{base}"]['bid']) * (1-FEE)
+def profit(base, a, b):
+    """beneficio neto base→a→b→base (positivo = ganancia USDT)"""
+    a_amt  = (START_USDT / pairs[f"{a}/{base}"]['ask']) * (1 - FEE)
+    b_amt  = (a_amt       / pairs[f"{b}/{a}"]  ['ask']) * (1 - FEE)
+    base_f = (b_amt       * pairs[f"{b}/{base}"]['bid']) * (1 - FEE)
     return base_f - START_USDT
 
-def heartbeat():
-    global last_beat
-    if time.time() - last_beat >= HEARTBEAT_SEC:
-        print(f"{now()}  [HEARTBEAT] Bot activo, sin oportunidades en los últimos 15 min.", flush=True)
-        last_beat = time.time()
+def log_all_profits(tag):
+    print(f"{now()}  === {tag} ===", flush=True)
+    for base, a, b in TRIANGLES:
+        p1 = profit(base, a, b)
+        p2 = profit(base, b, a)
+        print(f"{now()}  {base}->{a}->{b}->{base}  Profit:{p1:+.4f}", flush=True)
+        print(f"{now()}  {base}->{b}->{a}->{base}  Profit:{p2:+.4f}", flush=True)
+    print(f"{now()}  =========================", flush=True)
 
 print(f"{now()}  [BOOT] Arrancando bot con {len(TRIANGLES)} triángulos…", flush=True)
+
+first_run  = True
+last_beat  = time.time()
 
 while True:
     try:
         fetch_prices()
 
         if first_run:
-            print(f"{now()}  === Precios iniciales ===", flush=True)
-            for p in pairs:
-                print(f"{now()}  {p}  Bid:{pairs[p]['bid']}  Ask:{pairs[p]['ask']}", flush=True)
-            print(f"{now()}  =========================", flush=True)
+            log_all_profits("Profit inicial")
             first_run = False
 
-        for tri in TRIANGLES:
-            base, a, b = tri
-            prof = profit_for_triangle(base, a, b)
-            if prof > 0:
-                print(f"{now()}  [GAIN] {base}->{a}->{b}->{base}  Profit:{prof:.4f}", flush=True)
+        # verificar ganancias y reportar
+        for base, a, b in TRIANGLES:
+            p1 = profit(base, a, b)
+            if p1 > 0:
+                print(f"{now()}  [GAIN] {base}->{a}->{b}->{base}  +{p1:.4f}", flush=True)
+            p2 = profit(base, b, a)
+            if p2 > 0:
+                print(f"{now()}  [GAIN] {base}->{b}->{a}->{base}  +{p2:.4f}", flush=True)
 
-        heartbeat()
-        time.sleep(SLEEP)
+        # latido cada 15 min con snapshot de beneficios
+        if time.time() - last_beat >= HEARTBEAT_SEC:
+            log_all_profits("Heartbeat 15 min")
+            last_beat = time.time()
+
+        time.sleep(SLEEP_SECONDS)
 
     except Exception as e:
         print(f"{now()}  [ERROR] {e}", flush=True)
         traceback.print_exc()
-        time.sleep(SLEEP)
+        time.sleep(SLEEP_SECONDS)
