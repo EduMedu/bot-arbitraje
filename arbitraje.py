@@ -1,4 +1,3 @@
-
 import ccxt
 import time
 
@@ -31,7 +30,8 @@ def simulate_trade(amount=1000):
     usdt_final = (eth * pairs['ETH/USDT']['bid']) * (1 - fee)
     profit = usdt_final - usdt_start
 
-    print(f"USDT → BTC → ETH → USDT | Start: {usdt_start:.2f}, End: {usdt_final:.2f}, Profit: {profit:.4f}")
+    if profit > 0:
+        print(f"[GANANCIA] USDT → BTC → ETH → USDT | Start: {usdt_start:.2f}, End: {usdt_final:.2f}, Profit: {profit:.4f}")
 
     # Ruta 2: USDT → ETH → BTC → USDT
     eth2 = (usdt_start / pairs['ETH/USDT']['ask']) * (1 - fee)
@@ -39,7 +39,8 @@ def simulate_trade(amount=1000):
     usdt_final2 = (btc2 * pairs['BTC/USDT']['bid']) * (1 - fee)
     profit2 = usdt_final2 - usdt_start
 
-    print(f"USDT → ETH → BTC → USDT | Start: {usdt_start:.2f}, End: {usdt_final2:.2f}, Profit: {profit2:.4f}")
+    if profit2 > 0:
+        print(f"[GANANCIA] USDT → ETH → BTC → USDT | Start: {usdt_start:.2f}, End: {usdt_final2:.2f}, Profit: {profit2:.4f}")
 
 while True:
     fetch_prices()
