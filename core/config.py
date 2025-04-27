@@ -1,3 +1,9 @@
+FEE = 0.001          # comisión por operación (taker 0.1 %)
+START_USDT = 1000    # capital base para simulación
+LOOP_DELAY = 5       # segundos entre ciclos
+HEARTBEAT_SEC = 900  # latido cada 15 min
+
+# 50 triángulos
 # core/config.py  – fragmento relevante
 TRIANGLES = [
     # ── BTC como intermediario ──────────────────────────────
