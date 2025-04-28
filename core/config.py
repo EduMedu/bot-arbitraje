@@ -12,7 +12,7 @@ TRIANGLES = [
     ("USDT","BTC","ADA"), ("USDT","BTC","LINK"), ("USDT","BTC","LTC"), ("USDT","BTC","DOT"),
     ("USDT","BTC","AVAX"),("USDT","BTC","ATOM"), ("USDT","BTC","FIL"), ("USDT","BTC","NEAR"),
     ("USDT","BTC","BCH"), ("USDT","BTC","ICP"), ("USDT","BTC","EOS"), ("USDT","BTC","ETC"),
-    ("USDT","BTC","UNI"), ("USDT","BTC","APT"), ("USDT","BTC","FTM"), ("USDT","BTC","SUI"),
+    ("USDT","BTC","UNI"), ("USDT","BTC","APT"), ("USDT","BTC","SUI"),
 
     # ─── ETH como intermediario ─────────────────────────────────
     ("USDT","ETH","BNB"),  ("USDT","ETH","SOL"), ("USDT","ETH","XRP"), ("USDT","ETH","ADA"),
